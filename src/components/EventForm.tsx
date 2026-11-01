@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EventFormData } from "@/types/plan";
 
 interface EventFormProps {
@@ -73,8 +73,11 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
   });
   const [errors, setErrors] = useState<Partial<Record<keyof EventFormData, string>>>({});
 
-  // Get min date (today)
-  const today = new Date().toISOString().split("T")[0];
+  const [minDate, setMinDate] = useState("");
+
+  useEffect(() => {
+    setMinDate(new Date().toISOString().split("T")[0]);
+  }, []);
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof EventFormData, string>> = {};
@@ -137,7 +140,7 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
               id="eventDate"
               type="date"
               className="form-input"
-              min={today}
+              min={minDate || undefined}
               value={form.date}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
             />
