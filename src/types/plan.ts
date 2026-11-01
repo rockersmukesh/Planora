@@ -18,6 +18,7 @@ export interface Plan {
   assumptions: string[];
   trade_offs: string[];
   createdAt?: string;
+  isDemoMode?: boolean;
 }
 
 export interface EventFormData {
@@ -43,6 +44,7 @@ export interface PlanHistory {
   version: number;
   label: string;
   plan: Plan;
+  eventData: EventFormData;
   changes?: string;
   timestamp: string;
 }

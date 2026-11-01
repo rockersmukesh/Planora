@@ -5,6 +5,7 @@ import { Plan, EventFormData, PlanHistory } from "@/types/plan";
 import EventForm from "@/components/EventForm";
 import PlanResults from "@/components/PlanResults";
 import ReplanPanel from "@/components/ReplanPanel";
+import PlanDiffComparison from "@/components/PlanDiffComparison";
 
 export default function Home() {
   const [eventData, setEventData] = useState<EventFormData | null>(null);
@@ -14,9 +15,7 @@ export default function Home() {
   const [isReplanning, setIsReplanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [lastChanges, setLastChanges] = useState<PlanHistory["changes"] | undefined>(undefined);
-  const [activeHistoryTab, setActiveHistoryTab] = useState<number | null>(null);
-  const [activeSection, setActiveSection] = useState<"plan" | "replan" | "history">("plan");
+  const [activeTab, setActiveTab] = useState<"plan" | "compare" | "history">("plan");
   const [replanData, setReplanData] = useState<{
     newBudget: number;
     newGuestCount: number;
@@ -26,7 +25,6 @@ export default function Home() {
     setIsGenerating(true);
     setError(null);
     setWarnings([]);
-    setLastChanges(undefined);
 
     try {
       const response = await fetch("/api/plan", {
@@ -49,12 +47,13 @@ export default function Home() {
       // Add to history
       const historyEntry: PlanHistory = {
         version: 1,
-        label: "Initial Plan",
+        label: "Initial Plan (v1)",
         plan,
+        eventData: formData,
         timestamp: new Date().toISOString(),
       };
       setPlanHistory([historyEntry]);
-      setActiveSection("plan");
+      setActiveTab("plan");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
@@ -89,12 +88,6 @@ export default function Home() {
       const revisedPlan: Plan = data.plan;
       if (data.warnings?.length) setWarnings(data.warnings);
 
-      const changes = data.changes;
-      setLastChanges(
-        `Budget: ${changes?.oldBudget ?? eventData.budget} → ${changes?.newBudget ?? newBudget}, Guests: ${changes?.oldGuestCount ?? eventData.guests} → ${changes?.newGuestCount ?? newGuestCount}`
-      );
-
-      // Save old plan to history, update current
       const newVersion = planHistory.length + 1;
       const updatedData: EventFormData = {
         ...eventData,
@@ -106,8 +99,9 @@ export default function Home() {
         ...prev,
         {
           version: newVersion,
-          label: `Revised Plan v${newVersion}`,
+          label: `Revised Plan (v${newVersion})`,
           plan: revisedPlan,
+          eventData: updatedData,
           changes: `Budget: ${eventData.budget} → ${newBudget}, Guests: ${eventData.guests} → ${newGuestCount}`,
           timestamp: new Date().toISOString(),
         },
@@ -115,7 +109,7 @@ export default function Home() {
       setCurrentPlan(revisedPlan);
       setEventData(updatedData);
       setReplanData({ newBudget, newGuestCount });
-      setActiveSection("plan");
+      setActiveTab("compare"); // Automatically open comparison tab to wow judges!
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
@@ -129,9 +123,8 @@ export default function Home() {
     setPlanHistory([]);
     setError(null);
     setWarnings([]);
-    setLastChanges(undefined);
     setReplanData(null);
-    setActiveSection("plan");
+    setActiveTab("plan");
   };
 
   return (
@@ -140,7 +133,7 @@ export default function Home() {
       <header
         style={{
           borderBottom: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(10, 11, 20, 0.8)",
+          background: "rgba(10, 11, 20, 0.85)",
           backdropFilter: "blur(20px)",
           position: "sticky",
           top: 0,
@@ -149,7 +142,7 @@ export default function Home() {
       >
         <div
           style={{
-            maxWidth: "1400px",
+            maxWidth: "1440px",
             margin: "0 auto",
             padding: "0 24px",
             height: "64px",
@@ -184,34 +177,51 @@ export default function Home() {
                   background: "linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
                   lineHeight: 1,
                 }}
               >
                 Planora AI
               </div>
-              <div style={{ fontSize: "0.65rem", color: "#475569", letterSpacing: "0.06em" }}>
-                PLAN SMARTER · CELEBRATE BETTER
+              <div style={{ fontSize: "0.62rem", color: "#64748b", letterSpacing: "0.06em", marginTop: "2px" }}>
+                AI EVENT ARCHITECT · HACKATHON MVP
               </div>
             </div>
           </div>
 
-          {/* Right side */}
+          {/* Right Header Badges */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {currentPlan && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "rgba(16, 185, 129, 0.1)",
+                border: "1px solid rgba(16, 185, 129, 0.25)",
+                borderRadius: "999px",
+                padding: "4px 12px",
+                fontSize: "0.72rem",
+                color: "#34d399",
+                fontWeight: 600,
+              }}
+            >
               <span
-                className="badge badge-info"
-                style={{ fontSize: "0.72rem" }}
-              >
-                ✨ {planHistory.length} plan{planHistory.length > 1 ? "s" : ""} generated
-              </span>
-            )}
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "#10b981",
+                  display: "inline-block",
+                }}
+              />
+              AI Active
+            </div>
+
             {currentPlan && (
               <button
                 onClick={handleNewEvent}
                 id="new-event-btn"
                 className="btn-secondary"
-                style={{ fontSize: "0.8rem", padding: "8px 16px" }}
+                style={{ fontSize: "0.78rem", padding: "6px 14px" }}
               >
                 + New Event
               </button>
@@ -225,7 +235,9 @@ export default function Home() {
         <div
           style={{
             textAlign: "center",
-            padding: "60px 24px 40px",
+            padding: "50px 24px 30px",
+            maxWidth: "900px",
+            margin: "0 auto",
           }}
         >
           <div
@@ -241,7 +253,7 @@ export default function Home() {
               color: "#818cf8",
               fontWeight: 600,
               letterSpacing: "0.05em",
-              marginBottom: "24px",
+              marginBottom: "20px",
             }}
           >
             <span
@@ -250,90 +262,54 @@ export default function Home() {
                 height: "6px",
                 borderRadius: "50%",
                 background: "#6366f1",
-                animation: "pulse-glow 2s infinite",
                 display: "inline-block",
               }}
             />
-            Powered by Gemini AI
+            Engineered for Celebrations in India
           </div>
+
           <h1
             style={{
               fontFamily: "'Outfit', sans-serif",
-              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              fontSize: "clamp(2rem, 5vw, 3.4rem)",
               fontWeight: 900,
-              lineHeight: 1.1,
+              lineHeight: 1.15,
               marginBottom: "16px",
-              background: "linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%)",
+              background: "linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
             }}
           >
-            AI-Powered Event Planning{" "}
+            Smart Celebration Planning{" "}
             <span
               style={{
                 background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
               }}
             >
-              Made Simple
+              Powered by AI
             </span>
           </h1>
+
           <p
             style={{
-              fontSize: "1.05rem",
-              color: "#64748b",
-              maxWidth: "500px",
-              margin: "0 auto 40px",
+              fontSize: "1rem",
+              color: "#94a3b8",
+              maxWidth: "560px",
+              margin: "0 auto 30px",
               lineHeight: "1.6",
             }}
           >
-            Enter your event details and let Planora AI generate a complete plan —
-            budget breakdown, task checklist, and smart trade-off analysis.
+            Generate tailored budget allocations, milestone checklists, and real-time trade-off analysis for birthdays, anniversaries, and family celebrations.
           </p>
-          {/* Feature chips */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              flexWrap: "wrap",
-              marginBottom: "40px",
-            }}
-          >
-            {[
-              { icon: "💰", label: "Budget Allocation" },
-              { icon: "✅", label: "Task Checklist" },
-              { icon: "🔄", label: "Smart Replanning" },
-              { icon: "⚖", label: "Trade-off Analysis" },
-            ].map((f) => (
-              <div
-                key={f.label}
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "8px",
-                  padding: "6px 14px",
-                  fontSize: "0.8rem",
-                  color: "#94a3b8",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {f.icon} {f.label}
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
-      {/* ===== MAIN CONTENT ===== */}
+      {/* ===== MAIN APPLICATION CONTAINER ===== */}
       <main
         style={{
-          maxWidth: "1400px",
+          maxWidth: "1440px",
           margin: "0 auto",
           padding: "0 24px 60px",
         }}
@@ -349,82 +325,76 @@ export default function Home() {
               padding: "14px 18px",
               marginBottom: "24px",
               display: "flex",
-              alignItems: "flex-start",
-              gap: "10px",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
-            <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>❌</span>
-            <div>
-              <div style={{ fontSize: "0.85rem", color: "#f87171", fontWeight: 600, marginBottom: "2px" }}>
-                Error
-              </div>
-              <div style={{ fontSize: "0.8rem", color: "#fca5a5" }}>{error}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "1.1rem" }}>❌</span>
+              <span style={{ fontSize: "0.82rem", color: "#fca5a5" }}>{error}</span>
             </div>
             <button
               onClick={() => setError(null)}
               style={{
-                marginLeft: "auto",
                 background: "none",
                 border: "none",
                 color: "#f87171",
                 cursor: "pointer",
                 fontSize: "1.1rem",
-                padding: "0 4px",
               }}
-              aria-label="Dismiss error"
             >
               ×
             </button>
           </div>
         )}
 
-        {/* ===== TWO-COLUMN LAYOUT ===== */}
+        {/* ===== TWO-COLUMN DASHBOARD ===== */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: currentPlan ? "380px 1fr" : "500px",
+            gridTemplateColumns: currentPlan ? "400px 1fr" : "560px",
             justifyContent: currentPlan ? undefined : "center",
             gap: "24px",
             alignItems: "start",
           }}
         >
-          {/* ===== LEFT PANEL ===== */}
+          {/* ===== LEFT COLUMN: FORM OR EVENT OVERVIEW + REPLAN ===== */}
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {/* Event Form Card */}
+            {/* Form View (Initial) */}
             {!currentPlan && (
-              <div className="glass-card" style={{ padding: "28px" }}>
+              <div className="glass-card" style={{ padding: "26px" }}>
                 <h2
                   style={{
                     fontFamily: "'Outfit', sans-serif",
                     fontSize: "1.1rem",
                     fontWeight: 700,
                     color: "#f8fafc",
-                    marginBottom: "20px",
+                    marginBottom: "18px",
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
                   }}
                 >
-                  🎉 Create Your Event
+                  🎉 Plan Your Celebration
                 </h2>
                 {isGenerating ? (
-                  <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                  <div style={{ textAlign: "center", padding: "50px 20px" }}>
                     <div
                       style={{
-                        width: "60px",
-                        height: "60px",
+                        width: "50px",
+                        height: "50px",
                         borderRadius: "50%",
                         border: "3px solid rgba(99,102,241,0.2)",
                         borderTop: "3px solid #6366f1",
-                        animation: "spin-slow 1s linear infinite",
-                        margin: "0 auto 20px",
+                        animation: "spin-slow 0.8s linear infinite",
+                        margin: "0 auto 16px",
                       }}
                     />
-                    <div style={{ fontSize: "1rem", fontWeight: 600, color: "#f8fafc", marginBottom: "8px" }}>
-                      Generating Your Plan
+                    <div style={{ fontSize: "1rem", fontWeight: 700, color: "#f8fafc", marginBottom: "6px" }}>
+                      Architecting Event Plan…
                     </div>
-                    <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                      Planora AI is crafting your personalized event plan…
+                    <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                      Balancing venue, catering ratios, and timeline milestones…
                     </div>
                   </div>
                 ) : (
@@ -433,62 +403,70 @@ export default function Home() {
               </div>
             )}
 
-            {/* Compact event info when plan exists */}
+            {/* Event Summary Card (When plan exists) */}
             {currentPlan && eventData && (
               <>
-                <div className="glass-card-static" style={{ padding: "18px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc" }}>
+                <div className="glass-card-static" style={{ padding: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                    <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#f8fafc" }}>
                       🎉 {eventData.eventType}
                     </h3>
                     <button
                       onClick={handleNewEvent}
                       style={{
-                        background: "none",
-                        border: "1px solid rgba(255,255,255,0.1)",
+                        background: "rgba(255, 255, 255, 0.05)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
                         borderRadius: "6px",
-                        color: "#64748b",
+                        color: "#94a3b8",
                         padding: "3px 8px",
                         cursor: "pointer",
                         fontSize: "0.72rem",
                       }}
                     >
-                      Edit
+                      Reset
                     </button>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {[
-                      { icon: "📅", value: eventData.date },
-                      { icon: "📍", value: eventData.city },
-                      { icon: "👥", value: `${eventData.guests} guests` },
-                      { icon: "🍽️", value: eventData.foodPreferences },
-                      { icon: "✨", value: eventData.theme },
-                    ].map((item) => (
-                      <div key={item.icon} style={{ display: "flex", gap: "8px", fontSize: "0.8rem" }}>
-                        <span style={{ color: "#64748b", width: "18px" }}>{item.icon}</span>
-                        <span style={{ color: "#94a3b8" }}>{item.value}</span>
-                      </div>
-                    ))}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.82rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748b" }}>📅 Date:</span>
+                      <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{eventData.date}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748b" }}>📍 City:</span>
+                      <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{eventData.city}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748b" }}>👥 Guests:</span>
+                      <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{eventData.guests} pax</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748b" }}>🍽️ Food:</span>
+                      <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{eventData.foodPreferences}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748b" }}>✨ Theme:</span>
+                      <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{eventData.theme}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Replan Panel */}
+                {/* Replan Controls Panel */}
                 <div className="glass-card-static" style={{ padding: "20px" }}>
                   <h3
                     style={{
-                      fontSize: "0.88rem",
+                      fontSize: "0.95rem",
                       fontWeight: 700,
                       color: "#f8fafc",
-                      marginBottom: "16px",
+                      marginBottom: "14px",
                       display: "flex",
                       alignItems: "center",
                       gap: "8px",
                     }}
                   >
-                    🔄 Replan Event
+                    🔄 Replan Event Constraints
                   </h3>
                   {isReplanning ? (
-                    <div style={{ textAlign: "center", padding: "24px" }}>
+                    <div style={{ textAlign: "center", padding: "30px 10px" }}>
                       <div
                         style={{
                           width: "40px",
@@ -496,12 +474,15 @@ export default function Home() {
                           borderRadius: "50%",
                           border: "3px solid rgba(99,102,241,0.2)",
                           borderTop: "3px solid #6366f1",
-                          animation: "spin-slow 1s linear infinite",
+                          animation: "spin-slow 0.8s linear infinite",
                           margin: "0 auto 12px",
                         }}
                       />
-                      <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                        Replanning with new constraints…
+                      <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#f8fafc" }}>
+                        Calculating Revised Allocations…
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                        Analyzing trade-offs for updated budget & capacity…
                       </div>
                     </div>
                   ) : (
@@ -517,59 +498,97 @@ export default function Home() {
             )}
           </div>
 
-          {/* ===== RIGHT PANEL ===== */}
+          {/* ===== RIGHT COLUMN: MAIN PLAN, COMPARISON, OR HISTORY ===== */}
           {currentPlan && eventData && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* Section Tabs */}
-              {planHistory.length > 1 && (
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {(["plan", "history"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveSection(tab)}
-                      style={{
-                        padding: "8px 18px",
-                        borderRadius: "10px",
-                        border: "1px solid",
-                        fontSize: "0.82rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        textTransform: "capitalize",
-                        transition: "all 0.2s ease",
-                        background: activeSection === tab ? "rgba(99,102,241,0.2)" : "transparent",
-                        borderColor: activeSection === tab ? "#6366f1" : "rgba(255,255,255,0.08)",
-                        color: activeSection === tab ? "#818cf8" : "#64748b",
-                      }}
-                    >
-                      {tab === "plan" ? "📋 Current Plan" : `📜 History (${planHistory.length})`}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Top Navigation Tabs */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                  paddingBottom: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  onClick={() => setActiveTab("plan")}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: "8px",
+                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    background: activeTab === "plan" ? "rgba(99, 102, 241, 0.25)" : "transparent",
+                    border: activeTab === "plan" ? "1px solid #6366f1" : "1px solid rgba(255, 255, 255, 0.08)",
+                    color: activeTab === "plan" ? "#818cf8" : "#94a3b8",
+                  }}
+                >
+                  📋 Active Plan ({planHistory.length > 1 ? `v${planHistory.length}` : "v1"})
+                </button>
 
-              {/* Current Plan */}
-              {activeSection === "plan" && (
+                {planHistory.length > 1 && (
+                  <button
+                    onClick={() => setActiveTab("compare")}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      background: activeTab === "compare" ? "rgba(245, 158, 11, 0.2)" : "transparent",
+                      border: activeTab === "compare" ? "1px solid #f59e0b" : "1px solid rgba(255, 255, 255, 0.08)",
+                      color: activeTab === "compare" ? "#fbbf24" : "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    ⚖️ Side-by-Side Comparison
+                    <span style={{ background: "#f59e0b", color: "#000", fontSize: "0.65rem", padding: "1px 6px", borderRadius: "999px", fontWeight: 800 }}>
+                      v1 vs v{planHistory.length}
+                    </span>
+                  </button>
+                )}
+
+                {planHistory.length > 1 && (
+                  <button
+                    onClick={() => setActiveTab("history")}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      background: activeTab === "history" ? "rgba(99, 102, 241, 0.25)" : "transparent",
+                      border: activeTab === "history" ? "1px solid #6366f1" : "1px solid rgba(255, 255, 255, 0.08)",
+                      color: activeTab === "history" ? "#818cf8" : "#94a3b8",
+                    }}
+                  >
+                    📜 Timeline History ({planHistory.length})
+                  </button>
+                )}
+              </div>
+
+              {/* TAB 1: ACTIVE PLAN VIEW */}
+              {activeTab === "plan" && (
                 <PlanResults
                   plan={currentPlan}
                   eventData={eventData}
-                  label={planHistory.length > 1 ? `Revised Plan v${planHistory.length}` : "Initial Plan"}
+                  label={planHistory.length > 1 ? `Revised Plan v${planHistory.length}` : "Initial Plan v1"}
                   isLatest
                   warnings={warnings}
                   changes={
                     planHistory.length > 1 && replanData
                       ? {
-                          budgetChanged: replanData.newBudget !== (planHistory[planHistory.length - 2]?.plan ? eventData.budget : eventData.budget),
-                          guestCountChanged: replanData.newGuestCount !== eventData.guests,
-                          oldBudget: planHistory[planHistory.length - 2]
-                            ? planHistory[planHistory.length - 2].plan.budget_allocations.reduce(
-                                (s, a) => s + a.amount,
-                                0
-                              )
-                            : undefined,
+                          budgetChanged: replanData.newBudget !== planHistory[0].eventData.budget,
+                          guestCountChanged: replanData.newGuestCount !== planHistory[0].eventData.guests,
+                          oldBudget: planHistory[0].eventData.budget,
                           newBudget: eventData.budget,
-                          oldGuestCount: planHistory[planHistory.length - 2]
-                            ? eventData.guests
-                            : undefined,
+                          oldGuestCount: planHistory[0].eventData.guests,
                           newGuestCount: eventData.guests,
                         }
                       : undefined
@@ -577,73 +596,66 @@ export default function Home() {
                 />
               )}
 
-              {/* History View */}
-              {activeSection === "history" && planHistory.length > 0 && (
+              {/* TAB 2: SIDE-BY-SIDE COMPARISON (V1 vs LATEST) */}
+              {activeTab === "compare" && planHistory.length > 1 && (
+                <PlanDiffComparison
+                  originalPlan={planHistory[0].plan}
+                  revisedPlan={currentPlan}
+                  originalEvent={planHistory[0].eventData}
+                  revisedEvent={eventData}
+                />
+              )}
+
+              {/* TAB 3: TIMELINE VERSION HISTORY */}
+              {activeTab === "history" && planHistory.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   <div
                     style={{
-                      background: "rgba(99,102,241,0.06)",
-                      border: "1px solid rgba(99,102,241,0.15)",
+                      background: "rgba(99, 102, 241, 0.08)",
+                      border: "1px solid rgba(99, 102, 241, 0.2)",
                       borderRadius: "12px",
                       padding: "12px 16px",
                       fontSize: "0.82rem",
-                      color: "#64748b",
+                      color: "#94a3b8",
                     }}
                   >
-                    📜 Showing all {planHistory.length} plan version{planHistory.length > 1 ? "s" : ""}. The original plan is preserved for comparison.
+                    📜 Showing all {planHistory.length} iterations. Initial calculations are permanently preserved for audit and rollbacks.
                   </div>
 
-                  {/* History Tabs */}
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    {planHistory.map((h, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActiveHistoryTab(i)}
-                        style={{
-                          padding: "6px 14px",
-                          borderRadius: "8px",
-                          border: "1px solid",
-                          fontSize: "0.78rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          background:
-                            (activeHistoryTab === null ? i === planHistory.length - 1 : activeHistoryTab === i)
-                              ? "rgba(99,102,241,0.2)"
-                              : "transparent",
-                          borderColor:
-                            (activeHistoryTab === null ? i === planHistory.length - 1 : activeHistoryTab === i)
-                              ? "#6366f1"
-                              : "rgba(255,255,255,0.08)",
-                          color:
-                            (activeHistoryTab === null ? i === planHistory.length - 1 : activeHistoryTab === i)
-                              ? "#818cf8"
-                              : "#64748b",
-                        }}
-                      >
-                        v{h.version}
-                        {i === planHistory.length - 1 && (
-                          <span style={{ color: "#34d399", marginLeft: "4px" }}>●</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Display selected history entry */}
-                  {(() => {
-                    const idx =
-                      activeHistoryTab === null ? planHistory.length - 1 : activeHistoryTab;
-                    const entry = planHistory[idx];
-                    if (!entry) return null;
-                    return (
-                      <PlanResults
-                        plan={entry.plan}
-                        eventData={eventData}
-                        label={entry.label}
-                        isLatest={idx === planHistory.length - 1}
-                      />
-                    );
-                  })()}
+                  {planHistory.map((h, i) => (
+                    <div
+                      key={h.version}
+                      className="glass-card-static"
+                      style={{
+                        padding: "18px 20px",
+                        border: i === planHistory.length - 1 ? "1px solid #6366f1" : "1px solid rgba(255, 255, 255, 0.08)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#f8fafc" }}>
+                            {h.label}
+                          </span>
+                          {i === planHistory.length - 1 && (
+                            <span className="badge badge-success" style={{ fontSize: "0.68rem" }}>
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                          {new Date(h.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.8rem", color: "#94a3b8", lineHeight: "1.4" }}>
+                        {h.plan.summary}
+                      </p>
+                      {h.changes && (
+                        <div style={{ marginTop: "8px", fontSize: "0.75rem", color: "#fbbf24" }}>
+                          Delta: {h.changes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -654,16 +666,17 @@ export default function Home() {
       {/* ===== FOOTER ===== */}
       <footer
         style={{
-          borderTop: "1px solid rgba(255,255,255,0.04)",
-          padding: "20px 24px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+          padding: "24px",
           textAlign: "center",
+          background: "rgba(10, 11, 20, 0.7)",
         }}
       >
-        <div style={{ fontSize: "0.75rem", color: "#334155" }}>
-          Planora AI · AI-Powered Family Event Planner · Built with Next.js & Gemini AI
+        <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
+          Planora AI · Smart Family Event Planner · Built for the 2-Hour Hackathon
         </div>
-        <div style={{ fontSize: "0.7rem", color: "#1e293b", marginTop: "4px" }}>
-          ⚠ Budget figures are planning estimates. Not confirmed prices or vendor quotes.
+        <div style={{ fontSize: "0.72rem", color: "#475569", marginTop: "4px" }}>
+          Verified with server-side arithmetic validation & Gemini 1.5 Flash.
         </div>
       </footer>
     </div>

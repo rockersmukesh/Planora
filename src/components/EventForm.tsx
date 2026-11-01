@@ -9,54 +9,42 @@ interface EventFormProps {
 }
 
 const EVENT_TYPES = [
-  "Birthday Celebration",
-  "Wedding",
-  "Anniversary",
+  "Birthday Party",
+  "Anniversary Celebration",
+  "Family Reunion",
   "Baby Shower",
-  "Graduation Party",
-  "Corporate Event",
   "Engagement Party",
-  "Farewell Party",
-  "House Warming",
-  "Festival Celebration",
+  "Retirement Party",
+  "Housewarming (Griha Pravesh)",
+  "Festive Dinner (Diwali/Eid/Christmas)",
 ];
 
-const CURRENCIES = [
-  { code: "INR", symbol: "₹", name: "Indian Rupee" },
-  { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "€", name: "Euro" },
-  { code: "GBP", symbol: "£", name: "British Pound" },
-  { code: "AUD", symbol: "A$", name: "Australian Dollar" },
-  { code: "SGD", symbol: "S$", name: "Singapore Dollar" },
-  { code: "AED", symbol: "AED", name: "UAE Dirham" },
+const QUICK_CITIES = [
+  "Mumbai",
+  "Delhi NCR",
+  "Bengaluru",
+  "Pune",
+  "Hyderabad",
+  "Jaipur",
 ];
 
-const FOOD_OPTIONS = [
+const FOOD_PREFERENCES = [
   "Vegetarian",
-  "Non-Vegetarian",
-  "Vegan",
-  "Jain",
-  "Mixed (Veg + Non-Veg)",
-  "South Indian",
-  "North Indian",
-  "Continental",
-  "Pan-Asian",
-  "Mediterranean",
+  "Pure Jain",
+  "Non-Veg & Veg",
+  "Multi-Cuisine Buffet",
+  "Street Food & Live Chaat Stations",
+  "Traditional Regional Thali",
 ];
 
-const THEME_OPTIONS = [
+const THEMES = [
   "Elegant & Classic",
-  "Modern Minimalist",
+  "Bollywood Glamour",
   "Royal & Luxurious",
-  "Rustic & Bohemian",
   "Floral & Garden",
-  "Bollywood & Glamour",
-  "Tropical Paradise",
-  "Black & Gold",
   "Pastel Dreams",
+  "Rustic & Bohemian",
   "Vintage & Retro",
-  "Outdoor Adventure",
-  "Disney / Fantasy",
 ];
 
 export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
@@ -64,7 +52,7 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
     eventType: "",
     date: "",
     city: "",
-    guests: 50,
+    guests: 100,
     budget: 50000,
     currency: "INR",
     foodPreferences: "",
@@ -72,12 +60,49 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
     additionalNotes: "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof EventFormData, string>>>({});
-
   const [minDate, setMinDate] = useState("");
 
   useEffect(() => {
     setMinDate(new Date().toISOString().split("T")[0]);
   }, []);
+
+  const loadDemoScenario = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 28);
+    const targetDate = d.toISOString().split("T")[0];
+
+    setForm({
+      eventType: "Birthday Party",
+      date: targetDate,
+      city: "Mumbai",
+      guests: 100,
+      budget: 50000,
+      currency: "INR",
+      foodPreferences: "Vegetarian",
+      theme: "Elegant & Classic",
+      additionalNotes: "Grand family birthday celebration. Need welcoming atmosphere for elders and engaging dessert counter.",
+    });
+    setErrors({});
+  };
+
+  const loadAnniversaryScenario = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 45);
+    const targetDate = d.toISOString().split("T")[0];
+
+    setForm({
+      eventType: "Anniversary Celebration",
+      date: targetDate,
+      city: "Delhi NCR",
+      guests: 80,
+      budget: 85000,
+      currency: "INR",
+      foodPreferences: "Multi-Cuisine Buffet",
+      theme: "Royal & Luxurious",
+      additionalNotes: "25th Silver Jubilee wedding anniversary. High priority on sound, video projection, and stage decor.",
+    });
+    setErrors({});
+  };
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof EventFormData, string>> = {};
@@ -86,7 +111,7 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
     if (!form.city.trim()) newErrors.city = "Please enter a city";
     if (form.guests < 1) newErrors.guests = "At least 1 guest required";
     if (form.guests > 10000) newErrors.guests = "Maximum 10,000 guests";
-    if (form.budget < 1000) newErrors.budget = "Minimum budget is 1,000";
+    if (form.budget < 1000) newErrors.budget = "Minimum budget is ₹1,000";
     if (!form.foodPreferences) newErrors.foodPreferences = "Please select food preferences";
     if (!form.theme) newErrors.theme = "Please select a theme";
     setErrors(newErrors);
@@ -100,15 +125,83 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
     }
   };
 
-  const selectedCurrency = CURRENCIES.find((c) => c.code === form.currency);
+  const perGuest = Math.round(form.budget / Math.max(form.guests, 1));
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <div style={{ display: "grid", gap: "20px" }}>
+      {/* ===== ONE-CLICK JUDGE DEMO BANNER ===== */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))",
+          border: "1px solid rgba(99, 102, 241, 0.3)",
+          borderRadius: "12px",
+          padding: "12px 14px",
+          marginBottom: "20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#818cf8", textTransform: "uppercase", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: "6px" }}>
+            ⚡ Hackathon Demo Presets
+          </span>
+          <span style={{ fontSize: "0.7rem", color: "#94a3b8" }}>1-Click Auto-Fill</span>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={loadDemoScenario}
+            style={{
+              flex: "1 1 auto",
+              background: "rgba(99, 102, 241, 0.25)",
+              border: "1px solid rgba(99, 102, 241, 0.5)",
+              color: "#f8fafc",
+              padding: "7px 12px",
+              borderRadius: "8px",
+              fontSize: "0.78rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+            }}
+          >
+            🎂 Mumbai Birthday · ₹50k · 100 pax
+          </button>
+          <button
+            type="button"
+            onClick={loadAnniversaryScenario}
+            style={{
+              flex: "1 1 auto",
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              color: "#cbd5e1",
+              padding: "7px 12px",
+              borderRadius: "8px",
+              fontSize: "0.78rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+            }}
+          >
+            💍 Delhi Jubilee · ₹85k · 80 pax
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gap: "18px" }}>
         {/* Event Type */}
         <div>
-          <label htmlFor="eventType" className="form-label">
-            🎉 Event Type
+          <label htmlFor="eventType" className="form-label" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>🎉 Event Type</span>
+            <span style={{ fontSize: "0.72rem", color: "#64748b" }}>Required</span>
           </label>
           <select
             id="eventType"
@@ -116,7 +209,7 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
             value={form.eventType}
             onChange={(e) => setForm((f) => ({ ...f, eventType: e.target.value }))}
           >
-            <option value="">Select event type…</option>
+            <option value="">Select celebration type…</option>
             {EVENT_TYPES.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -124,14 +217,12 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
             ))}
           </select>
           {errors.eventType && (
-            <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "4px" }}>
-              {errors.eventType}
-            </p>
+            <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "4px" }}>{errors.eventType}</p>
           )}
         </div>
 
-        {/* Date & City */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        {/* Date & City (2 columns) */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           <div>
             <label htmlFor="eventDate" className="form-label">
               📅 Event Date
@@ -145,37 +236,57 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
             />
             {errors.date && (
-              <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "4px" }}>
-                {errors.date}
-              </p>
+              <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "4px" }}>{errors.date}</p>
             )}
           </div>
+
           <div>
             <label htmlFor="city" className="form-label">
-              📍 City
+              📍 City / Location
             </label>
             <input
               id="city"
               type="text"
               className="form-input"
-              placeholder="e.g. Mumbai"
+              placeholder="e.g., Mumbai"
               value={form.city}
               onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
             />
             {errors.city && (
-              <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "4px" }}>
-                {errors.city}
-              </p>
+              <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "4px" }}>{errors.city}</p>
             )}
           </div>
         </div>
 
-        {/* Guests */}
-        <div>
-          <label htmlFor="guests" className="form-label">
-            👥 Number of Guests
-          </label>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {/* Quick City Chips */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "-6px" }}>
+          {QUICK_CITIES.map((c) => (
+            <button
+              type="button"
+              key={c}
+              onClick={() => setForm((f) => ({ ...f, city: c }))}
+              style={{
+                background: form.city === c ? "rgba(99, 102, 241, 0.25)" : "rgba(255, 255, 255, 0.03)",
+                border: form.city === c ? "1px solid #6366f1" : "1px solid rgba(255, 255, 255, 0.07)",
+                borderRadius: "6px",
+                padding: "3px 8px",
+                fontSize: "0.72rem",
+                color: form.city === c ? "#818cf8" : "#94a3b8",
+                cursor: "pointer",
+              }}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {/* Guest Count & Budget (2 columns) with dynamic metric pill */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div>
+            <label htmlFor="guests" className="form-label" style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>👥 Guests</span>
+              <span style={{ fontSize: "0.75rem", color: "#818cf8", fontWeight: 600 }}>{form.guests} pax</span>
+            </label>
             <input
               id="guests"
               type="number"
@@ -183,103 +294,79 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
               min={1}
               max={10000}
               value={form.guests}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, guests: parseInt(e.target.value) || 0 }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, guests: Math.max(1, parseInt(e.target.value) || 0) }))}
             />
-            <span
-              style={{
-                background: "rgba(99, 102, 241, 0.15)",
-                color: "#818cf8",
-                padding: "8px 16px",
-                borderRadius: "8px",
-                fontSize: "0.85rem",
-                fontWeight: "600",
-                whiteSpace: "nowrap",
-                border: "1px solid rgba(99, 102, 241, 0.2)",
-              }}
-            >
-              {form.guests} guests
-            </span>
+            {errors.guests && (
+              <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "4px" }}>{errors.guests}</p>
+            )}
           </div>
-          {errors.guests && (
-            <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "4px" }}>
-              {errors.guests}
-            </p>
-          )}
-        </div>
 
-        {/* Budget & Currency */}
-        <div>
-          <label className="form-label">💰 Budget</label>
-          <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "10px" }}>
-            <select
-              id="currency"
-              className="form-input"
-              value={form.currency}
-              onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.symbol} {c.code}
-                </option>
-              ))}
-            </select>
+          <div>
+            <label htmlFor="budget" className="form-label" style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>💰 Budget (₹)</span>
+              <span style={{ fontSize: "0.75rem", color: "#34d399", fontWeight: 600 }}>₹{form.budget.toLocaleString()}</span>
+            </label>
             <input
               id="budget"
               type="number"
               className="form-input"
-              min={1000}
               step={1000}
+              min={1000}
               value={form.budget}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, budget: parseFloat(e.target.value) || 0 }))
-              }
-              placeholder="50000"
+              onChange={(e) => setForm((f) => ({ ...f, budget: Math.max(0, parseInt(e.target.value) || 0) }))}
             />
+            {errors.budget && (
+              <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "4px" }}>{errors.budget}</p>
+            )}
           </div>
-          {form.budget > 0 && (
-            <p style={{ color: "#94a3b8", fontSize: "0.78rem", marginTop: "6px" }}>
-              Per guest: {selectedCurrency?.symbol}
-              {Math.round(form.budget / Math.max(form.guests, 1)).toLocaleString("en-IN")}
-            </p>
-          )}
-          {errors.budget && (
-            <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "4px" }}>
-              {errors.budget}
-            </p>
-          )}
+        </div>
+
+        {/* Live Metrics Ribbon */}
+        <div
+          style={{
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+            borderRadius: "8px",
+            padding: "8px 12px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: "0.75rem",
+          }}
+        >
+          <span style={{ color: "#94a3b8" }}>Calculated Spend Ratio:</span>
+          <span style={{ color: "#f8fafc", fontWeight: 700 }}>
+            ₹{perGuest.toLocaleString()} <span style={{ color: "#64748b", fontWeight: 400 }}>/ guest</span>
+          </span>
         </div>
 
         {/* Food Preferences */}
         <div>
-          <label htmlFor="food" className="form-label">
-            🍽️ Food Preferences
+          <label htmlFor="foodPreferences" className="form-label">
+            🍽️ Catering & Food Style
           </label>
           <select
-            id="food"
+            id="foodPreferences"
             className="form-input"
             value={form.foodPreferences}
             onChange={(e) => setForm((f) => ({ ...f, foodPreferences: e.target.value }))}
           >
-            <option value="">Select food preferences…</option>
-            {FOOD_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
+            <option value="">Select menu style…</option>
+            {FOOD_PREFERENCES.map((food) => (
+              <option key={food} value={food}>
+                {food}
               </option>
             ))}
           </select>
           {errors.foodPreferences && (
-            <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "4px" }}>
-              {errors.foodPreferences}
-            </p>
+            <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "4px" }}>{errors.foodPreferences}</p>
           )}
         </div>
 
-        {/* Theme */}
+        {/* Theme & Style */}
         <div>
           <label htmlFor="theme" className="form-label">
-            ✨ Theme / Style
+            ✨ Theme & Decor Vibe
           </label>
           <select
             id="theme"
@@ -287,89 +374,70 @@ export default function EventForm({ onSubmit, isLoading }: EventFormProps) {
             value={form.theme}
             onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))}
           >
-            <option value="">Select a theme…</option>
-            {THEME_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            <option value="">Select celebration vibe…</option>
+            {THEMES.map((theme) => (
+              <option key={theme} value={theme}>
+                {theme}
               </option>
             ))}
           </select>
           {errors.theme && (
-            <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "4px" }}>
-              {errors.theme}
-            </p>
+            <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "4px" }}>{errors.theme}</p>
           )}
         </div>
 
         {/* Additional Notes */}
         <div>
-          <label htmlFor="notes" className="form-label">
-            📝 Additional Notes (Optional)
+          <label htmlFor="notes" className="form-label" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>📝 Specific Requests / Family Notes</span>
+            <span style={{ fontSize: "0.72rem", color: "#64748b" }}>Optional</span>
           </label>
           <textarea
             id="notes"
             className="form-input"
-            rows={3}
-            placeholder="Any special requirements, dietary restrictions, specific vendors you prefer…"
+            rows={2}
+            placeholder="e.g. Need welcoming seating for grandparents, prefer subtle acoustic music, focus on cake cutting stage."
             value={form.additionalNotes}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, additionalNotes: e.target.value }))
-            }
-            style={{ resize: "vertical", minHeight: "80px" }}
+            onChange={(e) => setForm((f) => ({ ...f, additionalNotes: e.target.value }))}
+            style={{ resize: "none" }}
           />
         </div>
 
-        {/* Submit */}
+        {/* Submit Button */}
         <button
           type="submit"
-          className="btn-primary"
-          disabled={isLoading}
           id="generate-plan-btn"
+          disabled={isLoading}
+          className="btn-primary"
           style={{
             width: "100%",
-            padding: "16px",
-            fontSize: "1rem",
+            padding: "14px",
+            fontSize: "0.92rem",
+            fontWeight: 700,
+            marginTop: "6px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "10px",
-            position: "relative",
-            zIndex: 1,
+            gap: "8px",
           }}
         >
           {isLoading ? (
             <>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ animation: "spin-slow 1s linear infinite" }}
-              >
-                <path d="M21 12a9 9 0 11-6.219-8.56" />
-              </svg>
-              Generating Your Plan…
+              <span
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  borderRadius: "50%",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderTop: "2px solid white",
+                  animation: "spin-slow 0.8s linear infinite",
+                  display: "inline-block",
+                }}
+              />
+              Architecting Your Plan…
             </>
           ) : (
-            <>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
-              Generate AI Plan
-            </>
+            <>✨ Generate Actionable Event Plan</>
           )}
         </button>
       </div>

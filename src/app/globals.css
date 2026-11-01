@@ -464,3 +464,28 @@ body {
     font-size: 0.85rem;
   }
 }
+
+/* ===== PRINT STYLESHEET ===== */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  header, footer, button, select, input, textarea, .badge {
+    display: none !important;
+  }
+
+  .glass-card, .glass-card-static {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    color: #0f172a !important;
+  }
+
+  h1, h2, h3, h4, span, div, p {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+}
+
